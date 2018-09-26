@@ -1,0 +1,61 @@
+<OpenSplice>
+    <Domain>
+        <Name>ospl_sp_ddsi</Name>
+		<Id>${ROS_DOMAIN_ID}</Id>
+		
+        <SingleProcess>true</SingleProcess>
+		<Service name="ddsi2e">
+            <Command>ddsi2e</Command>
+        </Service>
+    </Domain>
+
+	<DDSI2EService name="ddsi2e">
+		<General>
+            <NetworkInterfaceAddress>AUTO</NetworkInterfaceAddress>
+            <AllowMulticast>true</AllowMulticast>
+            <EnableMulticastLoopback>true</EnableMulticastLoopback>
+            <CoexistWithNativeNetworking>false</CoexistWithNativeNetworking>
+            <FragmentSize>64000B</FragmentSize>
+        </General>
+		<Discovery>
+			<ParticipantIndex>none</ParticipantIndex>
+		</Discovery>
+		<Internal>
+			<SynchronousDeliveryPriorityThreshold>14</SynchronousDeliveryPriorityThreshold>
+		</Internal>
+        <Compatibility>
+            <!-- see the release notes and/or the OpenSplice configurator on DDSI interoperability -->
+			<StandardsConformance>lax</StandardsConformance>
+		</Compatibility>
+		<Channels>
+			<Channel Name="low_pri_ch" TransportPriority="10">	</Channel>
+			<Channel Name="mid_pri_ch" TransportPriority="60">	</Channel>
+			<Channel Name="high_pri_ch" TransportPriority="150">	</Channel>
+		</Channels>	
+		<Threads>
+            <Thread Name="recv">
+                <Scheduling>
+                    <Class>realtime</Class>
+                    <Priority>60</Priority>
+                </Scheduling>
+            </Thread>
+			<Thread Name="xmit.low_pri_ch">
+                <Scheduling>
+                    <Priority>10</Priority>
+                    <Class>default</Class>
+                </Scheduling>
+            </Thread>
+            <Thread Name="xmit.mid_pri_ch">
+                <Scheduling>
+                    <Priority>default</Priority>
+                </Scheduling>
+            </Thread>
+			<Thread Name="xmit.high_pri_ch">
+                <Scheduling>
+                    <Priority>60</Priority>
+                    <Class>realtime</Class>
+                </Scheduling>
+            </Thread>
+		</Threads>
+	</DDSI2EService>
+</OpenSplice>
