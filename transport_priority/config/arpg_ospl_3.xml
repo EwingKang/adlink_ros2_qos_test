@@ -21,7 +21,7 @@
 			<ParticipantIndex>none</ParticipantIndex>
 		</Discovery>
 		<Internal>
-			<SynchronousDeliveryPriorityThreshold>14</SynchronousDeliveryPriorityThreshold>
+			<SynchronousDeliveryPriorityThreshold>60</SynchronousDeliveryPriorityThreshold>
 		</Internal>
         <Compatibility>
             <!-- see the release notes and/or the OpenSplice configurator on DDSI interoperability -->

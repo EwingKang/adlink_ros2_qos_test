@@ -75,6 +75,7 @@ public:
         , id_(0)
         , pub_count_(0)
         , isAlive_(false)
+		, endofTx_(false)
     {
         // verify command arguments
 
@@ -126,6 +127,12 @@ public:
             pong_number_ = clamp(pong_number_, 0, pong_number_);
         }
 
+        // Ewing average init
+        avg_cntr = 0;
+		sum_WAD = 0;
+		sum_RTD = 0;
+		sum_ORTD = 0;
+        
         // Test Times
         max_loop_ = 100;
         if (rcutils_cli_option_exist(argv, argv + argc, "-t"))
@@ -202,7 +209,7 @@ public:
         {
             std::vector<PacketRecord>* vpr = &pongPacketRecords_[i];
             std::ofstream logfile;
-            std::string filename = std::to_string(i + 1) + ".log";
+            std::string filename = std::to_string(i + 1) + "_p" + std::to_string(priority_) + ".log"; //Ewing
             logfile.open(dir_name_ + '/' + filename);
             logfile << "RoundTripDuration,OverallRoundTripDuration\n";
             int loss_cnt = max_loop_;
@@ -246,6 +253,11 @@ public:
         /* debug message */
         isAlive_ = false;
     }
+    
+    bool IsFinish()
+	{
+		return endofTx_;
+	}
 
 
 private:
@@ -255,7 +267,11 @@ private:
     adlink_msgs::msg::PingPong message_ = adlink_msgs::msg::PingPong();
 
     int id_, pub_count_, pub_timer_, msg_size_, max_loop_, pong_number_, priority_;
-    bool debug_info_, isAlive_;
+    bool debug_info_, isAlive_, endofTx_;
+	
+	unsigned int avg_cntr;	//EWING
+	double avg_WAD, avg_RTD, avg_ORTD;
+	double sum_WAD, sum_RTD, sum_ORTD;
 
     std::string dir_name_;
     std::vector<std::vector<PacketRecord> > pongPacketRecords_;
@@ -289,7 +305,13 @@ private:
         time_point<high_resolution_clock> tmp = high_resolution_clock::now();
 
         if (msg->sender_id - 1 >= pong_number_)
-            return;
+		{	return;	}
+		
+		if (msg->packet_no >= max_loop_-1)
+		{
+			endofTx_ = true;
+			return;
+		}
 
         PacketRecord* pr = &pongPacketRecords_[msg->sender_id - 1][msg->packet_no];
         pr->isReceived = true;
@@ -303,12 +325,27 @@ private:
                 = duration<double, std::milli>(pr->postReadTime_ - pr->postWriteTime_).count() / 2.0;
             pr->OverallRoundTripDuration
                 = duration<double, std::milli>(pr->postReadTime_ - pr->preWriteTime_).count() / 2.0;
-        
-            std::cout << std::fixed << std::setprecision(3) << std::setw(20)
-                        << msg->sender_id << std::setw(20) 
-                        << pr->WriteAccessDuration << std::setw(20)
-                        << pr->RoundTripDuration << std::setw(20) 
-                        << pr->OverallRoundTripDuration << std::endl;
+				
+			avg_cntr++;
+			sum_WAD += pr->WriteAccessDuration;
+			sum_RTD += pr->RoundTripDuration;
+			sum_ORTD += pr->OverallRoundTripDuration;
+			avg_WAD = sum_WAD / avg_cntr;
+			avg_RTD = sum_RTD / avg_cntr;
+			avg_ORTD = sum_ORTD / avg_cntr;
+			if(avg_cntr % 50 == 0)
+			{
+				std::cout << std::fixed << std::setprecision(3) << std::setw(10)
+							<< msg->sender_id << std::setw(10) 
+							<< avg_WAD << std::setw(10)
+							<< avg_RTD << std::setw(10) 
+							<< avg_ORTD << std::endl;
+			}
+			/*std::cout << std::fixed << std::setprecision(3) << std::setw(20)
+							<< msg->sender_id << std::setw(20) 
+							<< pr->WriteAccessDuration << std::setw(20)
+							<< pr->RoundTripDuration << std::setw(20) 
+							<< pr->OverallRoundTripDuration << std::endl;*/
         }
         isAlive_ = true;
     } // end of func
@@ -365,6 +402,12 @@ int main(int argc, char* argv[])
             start = std::clock();
             ping->ResetAlive();
         }
+        
+        if ( ping->IsFinish() )
+		{
+			printf("transmission finished\n");
+			break;
+		}
     }
 
     rclcpp::shutdown();
