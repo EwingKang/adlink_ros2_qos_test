@@ -16,6 +16,7 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <iomanip>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rcutils/cmdline_parser.h"
@@ -29,29 +30,61 @@ using std::placeholders::_1;
 class ThroughtputSub : public rclcpp::Node
 {
 public:
+    int TestCnt;
     ThroughtputSub(std::string topic) : Node("throughput_sub")
 	{
-		subscription_ = this->create_subscription<std_msgs::msg::String>(topic, 
-                        std::bind(&ThroughtputSub::topic_callback, this, _1));
+		TestCnt = 0;
+		last_clock_ = high_resolution_clock::now();
 		cnt_ = 0;
+		last_count_ = 0;
+		isFirstClock_ = true;
+		
+		subscription_ = this->create_subscription<std_msgs::msg::String>(topic, 
+                        std::bind(&ThroughtputSub::topic_callback, this, _1), 
+						rmw_qos_profile_default
+																		);
 	}
 
 
 private:
-	int cnt_;
+    int cnt_, last_count_;
+	int payload_size_;
+    bool isFirstClock_;
+	std::chrono::time_point<std::chrono::system_clock> last_clock_;
+	rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
+	
     void topic_callback(const std_msgs::msg::String::SharedPtr msg)
     {
-        (void)msg;
-		
+        //(void)msg; // to elimate unused message
 		cnt_++;
 		
-		if (cnt_ % 1000 == 0)
+		auto now = std::chrono::system_clock::now();
+		std::chrono::duration<double> duration_sec = now - last_clock_;
+		
+		if (duration_sec.count() >=1 )
 		{
-			std::cout << "Recieved the " << cnt_ << "th msg." << std::endl;
-		}	
-    }
+			payload_size_ = msg->data.length();
+			int cnt_delta = cnt_ - last_count_;
+			std::cout << std::fixed << std::setprecision(3) 
+					  << "count " << cnt_delta << " message, at " 
+					  << (float)cnt_delta / duration_sec.count() << " Hz, data rate "
+					  << (float)payload_size_*cnt_delta/1024/duration_sec.count() << "KB/s (" 
+					  << (float)payload_size_*cnt_delta*8/duration_sec.count() << " bps)"
+					  << std::endl;
+			last_clock_ = now;
+			last_count_ = cnt_;
+			if( isFirstClock_ ) 
+			{
+				std::cout << "Message Size " << payload_size_/1024 << "KB, ( " 
+						  << payload_size_*8 << " bit )" << std::endl;
+				isFirstClock_ = false;
+			}
+			
+		}
+			
+			
+	}
 
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
 };
 
 void print_usage()
@@ -59,6 +92,7 @@ void print_usage()
     printf("ROS2 transport priority testing tool - Sub:\n");
     printf("options:\n");
     printf("-no : topic no. [default=1].\n");
+	printf("-s : size in byte [default=4096].\n");
 }
 
 int main(int argc, char* argv[])
@@ -69,13 +103,15 @@ int main(int argc, char* argv[])
 	
 	// topic name
 	std::string no = "1";
+	
 	if (rcutils_cli_option_exist(argv, argv + argc, "-no"))
 	{
 		no = rcutils_cli_get_option(argv, argv + argc, "-no");
 	}
+
 	
 	std::string topic = "tp_" + no;
-    printf("Subscribing to topic \"%s\"\n", topic.c_str());
+    printf("Subscirbing to topic \"%s\"\n", topic.c_str());
 	
 	// node
 	rclcpp::spin(std::make_shared<ThroughtputSub>(topic));
