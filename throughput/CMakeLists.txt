@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(adlink_ros2_qos_test_priority)
+project(adlink_ros2_qos_test_throughput)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -27,19 +27,19 @@ ament_target_dependencies(Throughput_Sub rclcpp std_msgs)
 
 
 # RoadTrip_ping
-add_executable(RoundTrip_ping src/RoundTrip_ping.cpp)
-ament_target_dependencies(RoundTrip_ping rclcpp std_msgs adlink_msgs)
+#add_executable(RoundTrip_ping src/RoundTrip_ping.cpp)
+#ament_target_dependencies(RoundTrip_ping rclcpp std_msgs adlink_msgs)
 
-# RoadTrip_ping
-add_executable(RoundTrip_pong src/RoundTrip_pong.cpp)
-ament_target_dependencies(RoundTrip_pong rclcpp std_msgs adlink_msgs)
+# RoadTrip_pong
+#add_executable(RoundTrip_pong src/RoundTrip_pong.cpp)
+#ament_target_dependencies(RoundTrip_pong rclcpp std_msgs adlink_msgs)
 
 
 install(TARGETS
   Throughput_Pub
   Throughput_Sub
-  RoundTrip_ping
-  RoundTrip_pong
+  #RoundTrip_ping
+  #RoundTrip_pong
   DESTINATION lib/${PROJECT_NAME}
 )
 

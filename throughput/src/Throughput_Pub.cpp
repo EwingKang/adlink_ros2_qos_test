@@ -30,14 +30,14 @@ using std::placeholders::_1;
 class ThroughtputPub : public rclcpp::Node
 {
 public:
-    ThroughtputPub(std::string topic, int payload_size, float timer_rate) : Node("throughput_pub"), cnt_(0)
+    ThroughtputPub(std::string topic, int payload_size, float timer_rate) : Node("throughput_pub")
 	{
 		payload_size_ = payload_size;
 		timer_rate_ = timer_rate;
 		//no_delay_ = no_delay;
 		rmw_qos_profile_t custom_qos = rmw_qos_profile_default;
-		custom_qos.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
-        publisher_ = this->create_publisher<std_msgs::msg::String>(topic, custom_qos);
+		//custom_qos.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
+        publisher_ = this->create_publisher<std_msgs::msg::String>(topic, rmw_qos_profile_default);
 		
 		last_clock_ = std::chrono::system_clock::now();
 		

@@ -66,7 +66,7 @@ private:
 			payload_size_ = msg->data.length();
 			int cnt_delta = cnt_ - last_count_;
 			std::cout << std::fixed << std::setprecision(3) 
-					  << "count " << cnt_delta << " message, at " 
+					  << "count " << cnt_ << " message, at " 
 					  << (float)cnt_delta / duration_sec.count() << " Hz, data rate "
 					  << (float)payload_size_*cnt_delta/1024/duration_sec.count() << "KB/s (" 
 					  << (float)payload_size_*cnt_delta*8/duration_sec.count() << " bps)"
